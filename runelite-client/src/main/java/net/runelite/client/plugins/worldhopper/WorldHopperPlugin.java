@@ -27,6 +27,7 @@
 package net.runelite.client.plugins.worldhopper;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ObjectArrays;
 import com.google.inject.Provides;
@@ -55,6 +56,8 @@ import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.NameableContainer;
+import net.runelite.api.VarClientInt;
+import net.runelite.api.VarClientStr;
 import net.runelite.api.Varbits;
 import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.clan.ClanChannelMember;
@@ -65,6 +68,7 @@ import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WorldListLoad;
+import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatColorType;
@@ -101,6 +105,8 @@ import org.apache.commons.lang3.ArrayUtils;
 @Slf4j
 public class WorldHopperPlugin extends Plugin
 {
+	private static final String PRESS_ENTER_TO_CHAT = " Press Enter to Chat..."; //Part of the KeyRemapping plugin
+
 	private static final int REFRESH_THROTTLE = 60_000; // ms
 	private static final int MAX_PLAYER_COUNT = 1950;
 
@@ -166,17 +172,39 @@ public class WorldHopperPlugin extends Plugin
 	private final HotkeyListener previousKeyListener = new HotkeyListener(() -> config.previousKey())
 	{
 		@Override
+		/**
+		 * This function first checks the lockHotkeys config option. If the option is not selected, it executes the hop
+		 * Otherwise, it checks if the chat is typed in, and only allows the hop if it isn't
+		 */
 		public void hotkeyPressed()
 		{
-			clientThread.invoke(() -> hop(true));
+			if (config.lockHotkeys()) {
+				if (Strings.isNullOrEmpty(client.getVar(VarClientStr.CHATBOX_TYPED_TEXT))){
+					clientThread.invoke(() -> hop(true));
+				}
+			}
+			else {
+				clientThread.invoke(() -> hop(true));
+			}
 		}
 	};
 	private final HotkeyListener nextKeyListener = new HotkeyListener(() -> config.nextKey())
 	{
 		@Override
+		/**
+		 * This function first checks the lockHotkeys config option. If the option is not selected, it executes the hop
+		 * Otherwise, it checks if the chat is typed in, and only allows the hop if it isn't
+		 */
 		public void hotkeyPressed()
 		{
-			clientThread.invoke(() -> hop(false));
+			if (config.lockHotkeys()) {
+				if (Strings.isNullOrEmpty(client.getVar(VarClientStr.CHATBOX_TYPED_TEXT))){
+					clientThread.invoke(() -> hop(false));
+				}
+			}
+			else {
+				clientThread.invoke(() -> hop(false));
+			}
 		}
 	};
 
@@ -879,4 +907,23 @@ public class WorldHopperPlugin extends Plugin
 		storedPings.put(world.getId(), ping);
 		return ping;
 	}
+
+	/**
+	 * A copy of the chatboxFocused() function in KeyRemapping
+	 * @return if the chatbox is currently focused
+	 */
+	boolean chatboxFocused()
+	{
+		Widget chatboxParent = client.getWidget(WidgetInfo.CHATBOX_PARENT);
+		if (chatboxParent == null || chatboxParent.getOnKeyListener() == null)
+		{
+			return false;
+		}
+
+		// the search box on the world map can be focused, and chat input goes there, even
+		// though the chatbox still has its key listener.
+		Widget worldMapSearch = client.getWidget(WidgetInfo.WORLD_MAP_SEARCH);
+		return worldMapSearch == null || client.getVar(VarClientInt.WORLD_MAP_SEARCH_FOCUSED) != 1;
+	}
 }
+

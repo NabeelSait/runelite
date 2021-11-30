@@ -157,4 +157,15 @@ public interface WorldHopperConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+			keyName = "lockHotkeys",
+			name = "Lock Hotkeys while typing in chat",
+			description = "Lock hotkeys while typing in chat",
+			position = 10
+	)
+	default boolean lockHotkeys()
+	{
+		return false;
+	}
 }
