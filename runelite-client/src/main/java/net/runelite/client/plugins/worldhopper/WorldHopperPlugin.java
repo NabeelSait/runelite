@@ -105,8 +105,6 @@ import org.apache.commons.lang3.ArrayUtils;
 @Slf4j
 public class WorldHopperPlugin extends Plugin
 {
-	private static final String PRESS_ENTER_TO_CHAT = " Press Enter to Chat..."; //Part of the KeyRemapping plugin
-
 	private static final int REFRESH_THROTTLE = 60_000; // ms
 	private static final int MAX_PLAYER_COUNT = 1950;
 
@@ -178,6 +176,7 @@ public class WorldHopperPlugin extends Plugin
 		 */
 		public void hotkeyPressed()
 		{
+			//CS427 Issue link 
 			if (config.lockHotkeys()) {
 				if (Strings.isNullOrEmpty(client.getVar(VarClientStr.CHATBOX_TYPED_TEXT))){
 					clientThread.invoke(() -> hop(true));
@@ -468,14 +467,11 @@ public class WorldHopperPlugin extends Plugin
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		// If the player has disabled the side bar plugin panel, do not update the UI
-		if (config.showSidebar() && gameStateChanged.getGameState() == GameState.LOGGED_IN)
+		if (config.showSidebar() && gameStateChanged.getGameState() == GameState.LOGGED_IN && lastWorld != client.getWorld())
 		{
-			if (lastWorld != client.getWorld())
-			{
-				int newWorld = client.getWorld();
-				panel.switchCurrentHighlight(newWorld, lastWorld);
-				lastWorld = newWorld;
-			}
+			int newWorld = client.getWorld();
+			panel.switchCurrentHighlight(newWorld, lastWorld);
+			lastWorld = newWorld;
 		}
 	}
 
@@ -632,9 +628,9 @@ public class WorldHopperPlugin extends Plugin
 				break;
 			}
 		}
-		while (world != currentWorld);
+		while (world.equals(currentWorld));
 
-		if (world == currentWorld)
+		if (world.equals(currentWorld))
 		{
 			String chatMessage = new ChatMessageBuilder()
 				.append(ChatColorType.NORMAL)
